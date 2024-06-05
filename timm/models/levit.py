@@ -25,7 +25,7 @@ Modifications and additions for timm hacked together by / Copyright 2021, Ross W
 # Copyright 2020 Ross Wightman, Apache-2.0 License
 from collections import OrderedDict
 from functools import partial
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -554,7 +554,7 @@ class Levit(nn.Module):
         self.use_conv = use_conv
         self.num_classes = num_classes
         self.global_pool = global_pool
-        self.num_features = embed_dim[-1]
+        self.num_features = self.head_hidden_size = embed_dim[-1]
         self.embed_dim = embed_dim
         self.drop_rate = drop_rate
         self.grad_checkpointing = False
@@ -624,15 +624,15 @@ class Levit(nn.Module):
         self.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=None, distillation=None):
+    def reset_classifier(self, num_classes: int , global_pool: Optional[str] = None):
         self.num_classes = num_classes
         if global_pool is not None:
             self.global_pool = global_pool
         self.head = NormLinear(
-            self.embed_dim[-1], num_classes, drop=self.drop_rate) if num_classes > 0 else nn.Identity()
+            self.num_features, num_classes, drop=self.drop_rate) if num_classes > 0 else nn.Identity()
 
     def forward_features(self, x):
         x = self.stem(x)
@@ -662,10 +662,10 @@ class LevitDistilled(Levit):
         self.distilled_training = False  # must set this True to train w/ distillation token
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head, self.head_dist
 
-    def reset_classifier(self, num_classes, global_pool=None, distillation=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         if global_pool is not None:
             self.global_pool = global_pool

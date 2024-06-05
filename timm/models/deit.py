@@ -11,7 +11,7 @@ Modifications copyright 2021, Ross Wightman
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 from functools import partial
-from typing import Sequence, Union
+from typing import Optional
 
 import torch
 from torch import nn as nn
@@ -61,10 +61,10 @@ class VisionTransformerDistilled(VisionTransformer):
         )
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head, self.head_dist
 
-    def reset_classifier(self, num_classes, global_pool=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
         self.head_dist = nn.Linear(self.embed_dim, self.num_classes) if num_classes > 0 else nn.Identity()

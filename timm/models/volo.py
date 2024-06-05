@@ -20,6 +20,7 @@ Modifications and additions for timm by / Copyright 2022, Ross Wightman
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
+from typing import Optional
 
 import numpy as np
 import torch
@@ -481,7 +482,7 @@ class VOLO(nn.Module):
         self.global_pool = global_pool
         self.mix_token = use_mix_token
         self.pooling_scale = pooling_scale
-        self.num_features = embed_dims[-1]
+        self.num_features = self.head_hidden_size = embed_dims[-1]
         if use_mix_token:  # enable token mixing, see token labeling for details.
             self.beta = 1.0
             assert global_pool == 'token', "return all tokens if mix_token is enabled"
@@ -602,10 +603,10 @@ class VOLO(nn.Module):
         self.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         if global_pool is not None:
             self.global_pool = global_pool

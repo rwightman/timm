@@ -8,17 +8,16 @@ Original code and weights from https://github.com/mmaaz60/EdgeNeXt
 Modifications and additions for timm by / Copyright 2022, Ross Wightman
 """
 import math
-from collections import OrderedDict
 from functools import partial
-from typing import Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from timm.layers import trunc_normal_tf_, DropPath, LayerNorm2d, Mlp, SelectAdaptivePool2d, create_conv2d, \
-    use_fused_attn, NormMlpClassifierHead, ClassifierHead
+from timm.layers import trunc_normal_tf_, DropPath, LayerNorm2d, Mlp, create_conv2d, \
+    NormMlpClassifierHead, ClassifierHead
 from ._builder import build_model_with_cfg
 from ._features_fx import register_notrace_module
 from ._manipulate import named_apply, checkpoint_seq
@@ -374,7 +373,7 @@ class EdgeNeXt(nn.Module):
 
         self.stages = nn.Sequential(*stages)
 
-        self.num_features = dims[-1]
+        self.num_features = self.head_hidden_size = dims[-1]
         if head_norm_first:
             self.norm_pre = norm_layer(self.num_features)
             self.head = ClassifierHead(
@@ -412,10 +411,11 @@ class EdgeNeXt(nn.Module):
             s.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head.fc
 
-    def reset_classifier(self, num_classes=0, global_pool=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
+        self.num_classes = num_classes
         self.head.reset(num_classes, global_pool)
 
     def forward_features(self, x):

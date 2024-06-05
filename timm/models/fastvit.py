@@ -1160,7 +1160,7 @@ class FastVit(nn.Module):
                 scale *= 2
             self.feature_info += [dict(num_chs=prev_dim, reduction=4 * scale, module=f'stages.{i}')]
         self.stages = nn.Sequential(*stages)
-        self.num_features = prev_dim
+        self.num_features = self.head_hidden_size = prev_dim
 
         # For segmentation and detection, extract intermediate output
         if self.fork_feat:
@@ -1180,7 +1180,7 @@ class FastVit(nn.Module):
                 self.add_module(layer_name, layer)
         else:
             # Classifier head
-            self.num_features = final_features = int(embed_dims[-1] * cls_ratio)
+            self.num_features = self.head_hidden_size = final_features = int(embed_dims[-1] * cls_ratio)
             self.final_conv = MobileOneBlock(
                 in_chs=embed_dims[-1],
                 out_chs=final_features,
@@ -1229,10 +1229,10 @@ class FastVit(nn.Module):
             s.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head.fc
 
-    def reset_classifier(self, num_classes, global_pool=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         self.head.reset(num_classes, global_pool)
 

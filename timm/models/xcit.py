@@ -13,6 +13,7 @@ Modifications and additions for timm hacked together by / Copyright 2021, Ross W
 
 import math
 from functools import partial
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -337,7 +338,7 @@ class Xcit(nn.Module):
         act_layer = act_layer or nn.GELU
 
         self.num_classes = num_classes
-        self.num_features = self.embed_dim = embed_dim
+        self.num_features = self.head_hidden_size = self.embed_dim = embed_dim
         self.global_pool = global_pool
         self.grad_checkpointing = False
 
@@ -418,10 +419,10 @@ class Xcit(nn.Module):
         self.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=''):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         if global_pool is not None:
             assert global_pool in ('', 'avg', 'token')

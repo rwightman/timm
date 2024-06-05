@@ -1209,6 +1209,7 @@ class ByobNet(nn.Module):
         self.feature_info += [
             dict(num_chs=self.num_features, reduction=stage_feat[-1]['reduction'], module='final_conv')]
 
+        self.head_hidden_size = self.num_features
         self.head = ClassifierHead(
             self.num_features,
             num_classes,
@@ -1235,10 +1236,11 @@ class ByobNet(nn.Module):
         self.grad_checkpointing = enable
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head.fc
 
-    def reset_classifier(self, num_classes, global_pool='avg'):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
+        self.num_classes = num_classes
         self.head.reset(num_classes, global_pool)
 
     def forward_features(self, x):

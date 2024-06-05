@@ -9,6 +9,7 @@ Modifications and additions for timm hacked together by / Copyright 2021, Ross W
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 from functools import partial
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -237,7 +238,7 @@ class Cait(nn.Module):
 
         self.num_classes = num_classes
         self.global_pool = global_pool
-        self.num_features = self.embed_dim = embed_dim
+        self.num_features = self.head_hidden_size = self.embed_dim = embed_dim
         self.grad_checkpointing = False
 
         self.patch_embed = patch_layer(
@@ -326,10 +327,10 @@ class Cait(nn.Module):
         return _matcher
 
     @torch.jit.ignore
-    def get_classifier(self):
+    def get_classifier(self) -> nn.Module:
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=None):
+    def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None):
         self.num_classes = num_classes
         if global_pool is not None:
             assert global_pool in ('', 'token', 'avg')
